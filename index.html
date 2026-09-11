@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>준우와의 대화</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 420px;
+            height: 90vh;
+            max-height: 750px;
+            background-color: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* 헤더 스타일 */
+        .chat-header {
+            background-color: #4A90E2;
+            color: white;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .profile-img {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            color: #4A90E2;
+            font-size: 18px;
+        }
+
+        .user-info .name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .user-info .status {
+            font-size: 12px;
+            opacity: 0.8;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #2ecc71;
+            border-radius: 50%;
+        }
+
+        /* 메시지 영역 */
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background-color: #f8f9fa;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+            background-color: #ffffff;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .message.user {
+            align-self: flex-end;
+            background-color: #4A90E2;
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: #e9ecef;
+            padding: 10px 16px;
+            border-radius: 18px;
+            font-size: 12px;
+            color: #6c757d;
+            display: none;
+        }
+
+        /* 입력 영역 */
+        .chat-input-container {
+            padding: 16px;
+            background-color: white;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 1px solid #ddd;
+            border-radius: 24px;
+            padding: 12px 16px;
+            outline: none;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: #4A90E2;
+        }
+
+        .send-btn {
+            background-color: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .send-btn:hover {
+            background-color: #357ABD;
+        }
+
+        .send-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: white;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <!-- 헤더 -->
+    <div class="chat-header">
+        <div class="profile-img">준우</div>
+        <div class="user-info">
+            <div class="name">준우</div>
+            <div class="status">
+                <span class="status-dot"></span> 온라인
+            </div>
+        </div>
+    </div>
+
+    <!-- 대화 내용 -->
+    <div class="chat-messages" id="chatMessages">
+        <div class="message bot">
+            안녕! 무슨 일 있어? 오늘 하루는 어땠어? 편하게 이야기해줘! 😊
+        </div>
+    </div>
+
+    <!-- 타이핑 중 표시 -->
+    <div class="typing-indicator" id="typingIndicator">준우가 입력 중...</div>
+
+    <!-- 입력창 -->
+    <div class="chat-input-container">
+        <input type="text" id="userInput" class="chat-input" placeholder="메시지를 입력하세요..." onkeypress="handleKeyPress(event)">
+        <button class="send-btn" onclick="sendMessage()">
+            <svg viewBox="0 0 24 24">
+                <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z" />
+            </svg>
+        </button>
+    </div>
+</div>
+
+<script>
+    // 준우의 대답 룰베이스 엔진 (확장 가능)
+    const junuResponses = [
+        { keywords: ["안녕", "반가워", "하이"], responses: ["안녕! 오늘 따라 더 반갑네 하하", "어 왔어? 기다리고 있었지!", "반가워! 무슨 재밌는 일 있어?"] },
+        { keywords: ["밥", "식사", "점심", "저녁", "먹었"], responses: ["나는 챙겨 먹었지! 너는 맛있는 거 먹었어?", "밥은 잘 챙겨 먹어야 해. 오늘 메뉴는 뭐야?", "아직 안 먹었으면 얼른 맛있는 거 챙겨 먹어!"] },
+        { keywords: ["심심", "지루", "뭐해"], responses: ["나랑 대화하자! 내가 재밌는 얘기 해줄까?", "그러게 말이야, 나도 네 생각 하고 있었는데 통했네!", "심심할 땐 역시 나랑 수다 떠는 게 최고지 😆"] },
+        { keywords: ["힘들어", "지쳐", "슬퍼", "우울"], responses: ["무슨 일 있었구나... 힘들었겠다. 괜찮아, 내가 이야기 들어줄게.", "오늘 정말 수고 많았어. 잠깐 쉬어가도 괜찮아.", "내가 항상 네 편인 거 알지? 힘내자!"] },
+        { keywords: ["고마워", "감사", "고맙"], responses: ["별말씀을! 너한테 도움이 되었다니 기뻐.", "에이, 우리가 사이에 뭘 고마워해~", "언제든 필요한 거 있으면 말해!"] },
+        { keywords: ["잘 자", "잘자", "졸려", "취침"], responses: ["오늘 하루도 수고 많았어. 좋은 꿈꿔!", "푹 자고 내일 또 이야기하자. 잘 자!", "꿈에서 만나! 굿나잇 🌙"] }
+    ];
+
+    const defaultResponses = [
+        "그렇구나! 조금 더 자세히 얘기해줄래?",
+        "우와 정말? 그 다음엔 어떻게 됐어?",
+        "네 말 들으니까 나도 기분이 좋아진다 ㅎㅎ",
+        "음... 그렇게 생각할 수도 있겠네!",
+        "항상 네 이야기 들으면 시간 가는 줄 모르겠어."
+    ];
+
+    function sendMessage() {
+        const inputElement = document.getElementById("userInput");
+        const text = inputElement.value.trim();
+
+        if (text === "") return;
+
+        // 사용자 메시지 추가
+        addMessage(text, "user");
+        inputElement.value = "";
+
+        // 준우의 입력 중 표시
+        showTypingIndicator(true);
+
+        // 실제 사람이 대답하는 느낌을 주기 위한 랜덤 지연 (1초~2초)
+        const delay = Math.floor(Math.random() * 1000) + 1000;
+
+        setTimeout(() => {
+            showTypingIndicator(false);
+            const reply = getJunuReply(text);
+            addMessage(reply, "bot");
+        }, delay);
+    }
+
+    function addMessage(text, sender) {
+        const chatMessages = document.getElementById("chatMessages");
+        const messageDiv = document.createElement("div");
+        messageDiv.classList.add("message", sender);
+        messageDiv.innerText = text;
+        
+        chatMessages.appendChild(messageDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function getJunuReply(userText) {
+        // 키워드 매칭 검사
+        for (let item of junuResponses) {
+            for (let keyword of item.keywords) {
+                if (userText.includes(keyword)) {
+                    const randomIndex = Math.floor(Math.random() * item.responses.length);
+                    return item.responses[randomIndex];
+                }
+            }
+        }
+
+        // 일치하는 키워드가 없을 경우 기본 대답 리턴
+        const randomIndex = Math.floor(Math.random() * defaultResponses.length);
+        return defaultResponses[randomIndex];
+    }
+
+    function showTypingIndicator(show) {
+        const indicator = document.getElementById("typingIndicator");
+        indicator.style.display = show ? "block" : "none";
+        
+        const chatMessages = document.getElementById("chatMessages");
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === "Enter") {
+            sendMessage();
+        }
+    }
+</script>
+
+</body>
+</html>
