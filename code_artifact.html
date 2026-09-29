@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트 분리배출 가이드 - 내 쓰레기통 모아보기</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Font (Inter & Noto Sans KR) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Noto Sans KR', 'sans-serif'],
+                    },
+                    colors: {
+                        gemini: {
+                            50: '#f0f4f9',
+                            100: '#e1e9f5',
+                            500: '#1a73e8',
+                            600: '#1557b0',
+                            700: '#10438c',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f8fafc; color: #1e293b; }
+        .bin-card { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .bin-card:hover { transform: translateY(-4px); }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-800">
+
+    <header class="bg-white/80 backdrop-blur-md sticky top-0 z-30 border-b border-slate-200 shadow-sm">
+        <div class="max-w-6xl mx-auto px-4 py-3.5 flex justify-between items-center">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-500/20">
+                    <i class="fa-solid fa-recycle text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight text-slate-800">스마트 분리배출 가이드</h1>
+                    <p class="text-xs text-slate-500">버린 쓰레기별 맞춤 분류 기록함</p>
+                </div>
+            </div>
+            <button onclick="resetAllRecords()" class="text-xs px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-100 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate-right"></i> 전체 기록 초기화
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto px-4 py-6 flex-1 w-full space-y-8">
+
+        <section class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+            <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div class="max-w-2xl mx-auto text-center space-y-4 relative z-10">
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-400/20">
+                    <i class="fa-solid fa-sparkles text-amber-300"></i> AI 스마트 분류검색
+                </span>
+                <h2 class="text-2xl md:text-3xl font-bold leading-tight">
+                    버리려는 쓰레기를 검색하세요!
+                </h2>
+                <p class="text-sm text-slate-300">
+                    '떡', '라면용기', '치킨뼈' 등을 검색하면 배출법과 함께 해당 쓰레기통에 자동으로 쌓입니다.
+                </p>
+
+                <form onsubmit="handleSearch(event)" class="pt-2">
+                    <div class="relative flex items-center max-w-xl mx-auto">
+                        <input type="text" id="searchInput" placeholder="예: 떡, 라면 국물, 약품, 스프레이..." 
+                            class="w-full pl-5 pr-28 py-4 rounded-2xl text-slate-800 bg-white shadow-2xl focus:outline-none focus:ring-4 focus:ring-indigo-400/50 text-base placeholder:text-slate-400 font-medium">
+                        <button type="submit" id="searchBtn" 
+                            class="absolute right-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium transition-all shadow-md flex items-center gap-2">
+                            <span>검색</span>
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Quick Query Tags -->
+                <div class="flex flex-wrap justify-center gap-2 pt-2 text-xs text-slate-300">
+                    <span class="text-slate-400">자주 검색:</span>
+                    <button onclick="quickSearch('떡')" class="hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition">#떡</button>
+                    <button onclick="quickSearch('라면용기')" class="hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition">#라면용기</button>
+                    <button onclick="quickSearch('치킨뼈')" class="hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition">#치킨뼈</button>
+                    <button onclick="quickSearch('에어캡')" class="hover:text-white bg-white/10 hover:bg-white/20 px-2.5 py-1 rounded-lg transition">#에어캡</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="resultSection" class="hidden transition-all duration-300">
+            <!-- Loading Indicator -->
+            <div id="loadingBox" class="hidden bg-white p-8 rounded-2xl shadow-sm border border-slate-200 text-center space-y-3">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div>
+                <p class="text-slate-600 font-medium">Gemini AI가 분리배출 카테고리를 분석하는 중입니다...</p>
+            </div>
+
+            <!-- Analysis Result Box -->
+            <div id="resultBox" class="hidden bg-white rounded-2xl p-6 md:p-8 shadow-md border border-slate-200 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div class="flex items-center gap-3">
+                        <span id="resItemBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700"></span>
+                        <h3 id="resItemTitle" class="text-xl font-bold text-slate-800"></h3>
+                    </div>
+                    <div id="resBinTag" class="px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2"></div>
+                </div>
+
+                <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 text-slate-700 text-sm leading-relaxed" id="resDescription">
+                </div>
+
+                <div class="space-y-2">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400">올바른 상세 배출 요령</h4>
+                    <ul id="resSteps" class="space-y-2 text-sm text-slate-600"></ul>
+                </div>
+
+                <div class="pt-2 flex items-center justify-between text-xs text-slate-500 border-t border-slate-100">
+                    <span class="flex items-center gap-1.5 text-emerald-600 font-medium">
+                        <i class="fa-solid fa-circle-check"></i> 해당 쓰레기통에 이 항목이 자동으로 수거/기록되었습니다!
+                    </span>
+                    <button onclick="closeResult()" class="text-slate-400 hover:text-slate-600">닫기</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="space-y-4">
+            <div class="flex flex-wrap justify-between items-end gap-2">
+                <div>
+                    <h3 class="text-xl font-bold text-slate-800">내 쓰레기통 목록</h3>
+                    <p class="text-xs text-slate-500">쓰레기통을 클릭하면 내가 질의/버렸던 쓰레기 리스트를 바로 확인합니다.</p>
+                </div>
+                <span class="text-xs text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg font-medium">
+                    총 <span id="totalItemsCount">0</span>개의 버린 기록 저장됨
+                </span>
+            </div>
+
+            <!-- Bins Grid (8 categories) -->
+            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4" id="binsContainer">
+                <!-- Javascript will dynamically inject the 8 bin cards here -->
+            </div>
+        </section>
+    </main>
+
+    <div id="binModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 transition-opacity">
+        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl overflow-hidden border border-slate-100 animate-in fade-in zoom-in-95 duration-200">
+            <!-- Modal Header -->
+            <div id="modalHeader" class="p-5 text-white flex justify-between items-center transition-colors">
+                <div class="flex items-center gap-3">
+                    <div id="modalIcon" class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-xl"></div>
+                    <div>
+                        <h3 id="modalTitle" class="font-bold text-lg leading-snug"></h3>
+                        <p id="modalSubtitle" class="text-xs opacity-90"></p>
+                    </div>
+                </div>
+                <button onclick="closeBinModal()" class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Content (Tabs or Scrollable List) -->
+            <div class="p-5 overflow-y-auto space-y-6 flex-1">
+                <!-- Section 1: User's added history -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-clock-rotate-left"></i> 내가 문의/버린 쓰레기 목록
+                        </h4>
+                        <button id="clearCategoryBtn" onclick="clearCurrentCategory()" class="text-xs text-rose-500 hover:text-rose-700 font-medium">
+                            이 쓰레기통 비우기
+                        </button>
+                    </div>
+
+                    <div id="userItemsList" class="space-y-2">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <hr class="border-slate-100">
+
+                <!-- Section 2: Standard/Default items for this bin -->
+                <div class="space-y-3">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fa-solid fa-book-open"></i> 이 분류의 대표 기본 품목 가이드
+                    </h4>
+                    <div id="defaultItemsList" class="grid grid-cols-2 gap-2 text-xs text-slate-600">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 bg-slate-50 border-t border-slate-100 text-center">
+                <button onclick="closeBinModal()" class="w-full py-2.5 bg-slate-800 text-white font-medium rounded-xl hover:bg-slate-900 transition text-sm">
+                    확인 및 닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Category Definitions
+        const CATEGORIES = {
+            FOOD: {
+                id: 'food',
+                name: '음식물쓰레기',
+                color: 'orange',
+                bgClass: 'bg-orange-500',
+                borderClass: 'border-orange-200',
+                lightBg: 'bg-orange-50',
+                badgeBg: 'bg-orange-100 text-orange-800',
+                icon: 'fa-utensils',
+                desc: '동물이 섭취할 수 있는 수분 함유 유기성 폐기물',
+                defaults: ['떡', '라면 국물(물에 헹굼)', '밥/반찬 잔반', '상한 과일 채소', '식빵', '면류']
+            },
+            GENERAL: {
+                id: 'general',
+                name: '일반쓰레기',
+                color: 'slate',
+                bgClass: 'bg-slate-600',
+                borderClass: 'border-slate-200',
+                lightBg: 'bg-slate-100',
+                badgeBg: 'bg-slate-200 text-slate-800',
+                icon: 'fa-trash-can',
+                desc: '재활용이 불가능한 종량제 봉투 배출품',
+                defaults: ['치킨뼈/족발뼈', '조개/전복 껍데기', '계란 껍질', '파뿌리/마늘껍질', '기저귀/생리대', '휴지/티슈']
+            },
+            VINYL: {
+                id: 'vinyl',
+                name: '비닐류',
+                color: 'amber',
+                bgClass: 'bg-amber-400 text-slate-900',
+                borderClass: 'border-amber-200',
+                lightBg: 'bg-amber-50',
+                badgeBg: 'bg-amber-100 text-amber-900',
+                icon: 'fa-box-archive',
+                desc: '투명/색상 비닐 봉투 및 포장재 (이물질 제거 필수)',
+                defaults: ['라면 봉지', '과자 봉지', '에어캡(뽁뽁이)', '클린백/위생비닐', '일회용 비닐장갑']
+            },
+            PLASTIC: {
+                id: 'plastic',
+                name: '플라스틱류',
+                color: 'teal',
+                bgClass: 'bg-teal-500',
+                borderClass: 'border-teal-200',
+                lightBg: 'bg-teal-50',
+                badgeBg: 'bg-teal-100 text-teal-800',
+                icon: 'fa-bottle-water',
+                desc: '페트병, 플라스틱 용기류 (라벨제거, 세척 필수)',
+                defaults: ['생수병/음료수병', '샴푸/세제 용기', '배달용기(세척 후)', '투명 컵', '플라스틱 칫솔']
+            },
+            PAPER: {
+                id: 'paper',
+                name: '종이/종이팩',
+                color: 'amber',
+                bgClass: 'bg-amber-700',
+                borderClass: 'border-amber-200',
+                lightBg: 'bg-amber-900/5',
+                badgeBg: 'bg-amber-100 text-amber-900',
+                icon: 'fa-newspaper',
+                desc: '신문, 상자, 우유팩 (테이프/철사 제거)',
+                defaults: ['택배 상자', '우유팩/두유팩', '신문/전단지', '책/노트', '종이컵']
+            },
+            GLASS: {
+                id: 'glass',
+                name: '유리류',
+                color: 'emerald',
+                bgClass: 'bg-emerald-600',
+                borderClass: 'border-emerald-200',
+                lightBg: 'bg-emerald-50',
+                badgeBg: 'bg-emerald-100 text-emerald-800',
+                icon: 'fa-wine-bottle',
+                desc: '음료수병, 와인병, 와인 잔 등 (깨진 것은 일반쓰레기)',
+                defaults: ['소주/맥주병', '잼/소스 유리병', '화장품 유리용기', '음료수 유리병']
+            },
+            STYROFOAM: {
+                id: 'styrofoam',
+                name: '스티로폼류',
+                color: 'sky',
+                bgClass: 'bg-sky-400 text-slate-900',
+                borderClass: 'border-sky-200',
+                lightBg: 'bg-sky-50',
+                badgeBg: 'bg-sky-100 text-sky-900',
+                icon: 'fa-cubes',
+                desc: '흰색 스티로폼 상자 및 완충재 (테이프/스티커 제거)',
+                defaults: ['스티로폼 택배상자', '전자제품 완충재', '과일 포장 스티로폼']
+            },
+            SPECIAL: {
+                id: 'special',
+                name: '특수/폐기물/가전',
+                color: 'purple',
+                bgClass: 'bg-purple-600',
+                borderClass: 'border-purple-200',
+                lightBg: 'bg-purple-50',
+                badgeBg: 'bg-purple-100 text-purple-800',
+                icon: 'fa-plug',
+                desc: '폐건전지, 의약품, 소형가전, 형광등 등 전용 수거함 배출',
+                defaults: ['폐건전지', '유통기한 지난 약', '폐형광등', '소형 가전(헤어드라이어 등)', '부탄가스 통']
+            }
+        };
+
+        // App State
+        let records = {}; // { 'food': [ { name: '떡', steps: [...], date: '...' } ], ... }
+        let currentModalCatId = null;
+
+        // Init App
+        window.onload = function() {
+            loadRecords();
+            renderBins();
+            
+            // Default seed data for initial rich user experience if empty
+            if (Object.keys(records).every(k => !records[k] || records[k].length === 0)) {
+                seedInitialData();
+            }
+        };
+
+        function seedInitialData() {
+            addRecord('food', '떡', ['음식물 쓰레기통 배출', '너무 딱딱하거나 덩어리가 크면 잘라서 배출하세요.'], '예시 데이터');
+            addRecord('general', '치킨뼈', ['일반쓰레기(종량제 봉투) 배출', '살점을 최대한 제거 후 종량제 봉투에 버립니다.'], '예시 데이터');
+            addRecord('plastic', '투명 생수병', ['비닐 라벨을 떼어내고 착착 접어서 플라스틱 수거함에 배출합니다.'], '예시 데이터');
+            renderBins();
+        }
+
+        function loadRecords() {
+            const saved = localStorage.getItem('smart_recycle_records_v2');
+            if (saved) {
+                try {
+                    records = JSON.parse(saved);
+                } catch(e) {
+                    records = {};
+                }
+            }
+            // Ensure all category keys exist
+            Object.keys(CATEGORIES).forEach(catKey => {
+                const catId = CATEGORIES[catKey].id;
+                if (!records[catId]) records[catId] = [];
+            });
+        }
+
+        function saveRecords() {
+            localStorage.setItem('smart_recycle_records_v2', JSON.stringify(records));
+            updateTotalBadge();
+        }
+
+        function addRecord(catId, itemName, steps = [], note = '') {
+            if (!records[catId]) records[catId] = [];
+            
+            // Check duplicate - if exists, update date & move to front
+            const existingIndex = records[catId].findIndex(item => item.name.trim() === itemName.trim());
+            const newItem = {
+                id: Date.now().toString(),
+                name: itemName,
+                steps: steps,
+                note: note,
+                date: new Date().toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+            };
+
+            if (existingIndex > -1) {
+                records[catId].splice(existingIndex, 1);
+            }
+            records[catId].unshift(newItem);
+            saveRecords();
+            renderBins();
+        }
+
+        function removeRecord(catId, itemId, event) {
+            if(event) event.stopPropagation();
+            if (!records[catId]) return;
+            records[catId] = records[catId].filter(i => i.id !== itemId);
+            saveRecords();
+            renderBins();
+            if (currentModalCatId === catId) {
+                renderModalContent(catId);
+            }
+        }
+
+        function clearCurrentCategory() {
+            if (!currentModalCatId) return;
+            const cat = Object.values(CATEGORIES).find(c => c.id === currentModalCatId);
+            if (confirm(`'${cat.name}' 목록을 정말 모두 비우시겠습니까?`)) {
+                records[currentModalCatId] = [];
+                saveRecords();
+                renderBins();
+                renderModalContent(currentModalCatId);
+            }
+        }
+
+        function resetAllRecords() {
+            if (confirm('모든 쓰레기통의 기록을 초기화하시겠습니까?')) {
+                records = {};
+                Object.keys(CATEGORIES).forEach(catKey => {
+                    records[CATEGORIES[catKey].id] = [];
+                });
+                saveRecords();
+                renderBins();
+                if (currentModalCatId) closeBinModal();
+            }
+        }
+
+        function renderBins() {
+            const container = document.getElementById('binsContainer');
+            container.innerHTML = '';
+
+            let total = 0;
+
+            Object.values(CATEGORIES).forEach(cat => {
+                const count = (records[cat.id] || []).length;
+                total += count;
+
+                const card = document.createElement('div');
+                card.className = `bin-card bg-white rounded-2xl p-5 border ${cat.borderClass} shadow-sm hover:shadow-md cursor-pointer flex flex-col justify-between space-y-4 relative overflow-hidden group`;
+                card.onclick = () => openBinModal(cat.id);
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="w-12 h-12 rounded-2xl ${cat.bgClass} flex items-center justify-center text-white text-xl shadow-md group-hover:scale-110 transition-transform">
+                            <i class="fa-solid ${cat.icon}"></i>
+                        </div>
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold ${count > 0 ? cat.badgeBg : 'bg-slate-100 text-slate-400'}">
+                            버린 쓰레기 ${count}개
+                        </span>
+                    </div>
+
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-base">${cat.name}</h4>
+                        <p class="text-xs text-slate-500 line-clamp-1 mt-0.5">${cat.desc}</p>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-400">
+                        <span>최근 기록 확인</span>
+                        <i class="fa-solid fa-chevron-right text-[10px] group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+
+            document.getElementById('totalItemsCount').textContent = total;
+        }
+
+        function updateTotalBadge() {
+            let total = 0;
+            Object.keys(records).forEach(k => {
+                total += (records[k] || []).length;
+            });
+            document.getElementById('totalItemsCount').textContent = total;
+        }
+
+        async function handleSearch(e) {
+            e.preventDefault();
+            const input = document.getElementById('searchInput');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const loadingBox = document.getElementById('loadingBox');
+            const resultBox = document.getElementById('resultBox');
+            const resultSection = document.getElementById('resultSection');
+
+            resultSection.classList.remove('hidden');
+            loadingBox.classList.remove('hidden');
+            resultBox.classList.add('hidden');
+
+            try {
+                // Call Gemini API via fetch
+                const aiResult = await classifyGarbageWithGemini(query);
+                
+                // Show result & automatically record to LocalStorage
+                displayResult(query, aiResult);
+                addRecord(aiResult.categoryId, query, aiResult.steps, aiResult.description);
+
+            } catch (err) {
+                console.error("Gemini classification failed, using smart fallback", err);
+                const fallbackResult = fallbackClassify(query);
+                displayResult(query, fallbackResult);
+                addRecord(fallbackResult.categoryId, query, fallbackResult.steps, fallbackResult.description);
+            } finally {
+                loadingBox.classList.add('hidden');
+            }
+        }
+
+        function quickSearch(keyword) {
+            document.getElementById('searchInput').value = keyword;
+            handleSearch(new Event('submit'));
+        }
+
+        async function classifyGarbageWithGemini(query) {
+            const apiKey = ""; // Canvas runtime environment automatically passes empty key
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+            const systemPrompt = `
+            너는 대한민국 환경부 분리배출 표준 기준에 특화된 전문 AI 도우미야.
+            사용자가 입력한 쓰레기 품목에 대해 가장 적절한 카테고리를 아래 8개 ID 중 하나로 분류하고 올바른 배출법을 안내해줘.
+
+            카테고리 ID 목록:
+            - food (음식물쓰레기)
+            - general (일반쓰레기 - 종량제봉투)
+            - vinyl (비닐류)
+            - plastic (플라스틱류)
+            - paper (종이/종이팩)
+            - glass (유리류)
+            - styrofoam (스티로폼류)
+            - special (특수/폐기물/가전/약품/건전지)
+
+            JSON 형태로 응답해줘:
+            {
+                "categoryId": "카테고리ID",
+                "categoryName": "한글 카테고리명",
+                "description": "이 쓰레기의 핵심 분류 이유 및 개요",
+                "steps": ["배출 단계 1", "배출 단계 2", "배출 단계 3"]
+            }
+            `;
+
+            const payload = {
+                contents: [{ parts: [{ text: `쓰레기 항목: '${query}'` }] }],
+                systemInstruction: { parts: [{ text: systemPrompt }] },
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) throw new Error("API request failed");
+
+            const data = await response.json();
+            const textResult = data.candidates?.[0]?.content?.parts?.[0]?.text;
+            return JSON.parse(textResult);
+        }
+
+        // Rule-based Fallback in case of API offline/rate limit
+        function fallbackClassify(query) {
+            const q = query.toLowerCase();
+
+            if (q.includes('떡') || q.includes('밥') || q.includes('수박') || q.includes('사과') || q.includes('과일') || q.includes('국물') || q.includes('잔반')) {
+                return {
+                    categoryId: 'food',
+                    categoryName: '음식물쓰레기',
+                    description: '동물이 재가공하여 먹을 수 있는 유기성 폐기물입니다. 물기를 잘 짜서 배출해주세요.',
+                    steps: ['수분 및 이물질(비닐 등)을 가급적 제거합니다.', '음식물 전용 수거함 또는 전용 종량제 봉투에 버립니다.']
+                };
+            } else if (q.includes('뼈') || q.includes('조개') || q.includes('껍질') || q.includes('휴지') || q.includes('기저귀') || q.includes('계란')) {
+                return {
+                    categoryId: 'general',
+                    categoryName: '일반쓰레기',
+                    description: '재활용이나 사료화가 불가능한 항목입니다. 일반 종량제 봉투에 버려야 합니다.',
+                    steps: ['살점이나 잔여물을 제거합니다.', '일반 종량제 봉투에 담아 배출합니다.']
+                };
+            } else if (q.includes('비닐') || q.includes('과자') || q.includes('라면봉지') || q.includes('뽁뽁이')) {
+                return {
+                    categoryId: 'vinyl',
+                    categoryName: '비닐류',
+                    description: '깨끗이 헹구거나 오염을 제거한 투명/유색 비닐입니다.',
+                    steps: ['내용물을 비우고 오염 물질을 물로 헹굽니다.', '흩날리지 않도록 차곡차곡 접거나 모아서 비닐 전용함에 배출합니다.']
+                };
+            } else if (q.includes('페트') || q.includes('플라스틱') || q.includes('음료수병') || q.includes('용기')) {
+                return {
+                    categoryId: 'plastic',
+                    categoryName: '플라스틱류',
+                    description: '내용물을 비우고 라벨을 제거한 플라스틱 용기류입니다.',
+                    steps: ['내용물을 깨끗이 세척합니다.', '비닐 라벨을 떼어내고 찌그러뜨려 배출합니다.']
+                };
+            } else {
+                return {
+                    categoryId: 'general',
+                    categoryName: '일반쓰레기',
+                    description: '일반 종량제 봉투에 배출하거나 규격봉투에 담아야 합니다.',
+                    steps: ['이물질을 최대한 제거 후 배출합니다.']
+                };
+            }
+        }
+
+        function displayResult(query, res) {
+            const resultBox = document.getElementById('resultBox');
+            const cat = Object.values(CATEGORIES).find(c => c.id === res.categoryId) || CATEGORIES.GENERAL;
+
+            document.getElementById('resItemTitle').textContent = query;
+            document.getElementById('resItemBadge').textContent = `검색어: ${query}`;
+            
+            const tag = document.getElementById('resBinTag');
+            tag.className = `px-3.5 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 ${cat.bgClass} text-white shadow-sm`;
+            tag.innerHTML = `<i class="fa-solid ${cat.icon}"></i> ${cat.name} 쓰레기통으로 분류됨`;
+
+            document.getElementById('resDescription').textContent = res.description;
+
+            const stepsUl = document.getElementById('resSteps');
+            stepsUl.innerHTML = '';
+            (res.steps || []).forEach((step, idx) => {
+                const li = document.createElement('li');
+                li.className = 'flex items-start gap-2';
+                li.innerHTML = `<span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${idx+1}</span> <span>${step}</span>`;
+                stepsUl.appendChild(li);
+            });
+
+            resultBox.classList.remove('hidden');
+        }
+
+        function closeResult() {
+            document.getElementById('resultSection').classList.add('hidden');
+        }
+
+        function openBinModal(catId) {
+            currentModalCatId = catId;
+            const cat = Object.values(CATEGORIES).find(c => c.id === catId);
+            if (!cat) return;
+
+            const modal = document.getElementById('binModal');
+            const header = document.getElementById('modalHeader');
+            
+            header.className = `p-5 text-white flex justify-between items-center ${cat.bgClass}`;
+            document.getElementById('modalIcon').innerHTML = `<i class="fa-solid ${cat.icon}"></i>`;
+            document.getElementById('modalTitle').textContent = `${cat.name} 쓰레기통`;
+            document.getElementById('modalSubtitle').textContent = cat.desc;
+
+            renderModalContent(catId);
+            modal.classList.remove('hidden');
+        }
+
+        function renderModalContent(catId) {
+            const cat = Object.values(CATEGORIES).find(c => c.id === catId);
+            const userList = document.getElementById('userItemsList');
+            const defaultList = document.getElementById('defaultItemsList');
+
+            const myItems = records[catId] || [];
+
+            // 1. Render user recorded garbage items
+            if (myItems.length === 0) {
+                userList.innerHTML = `
+                    <div class="text-center py-6 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50/50">
+                        <i class="fa-solid fa-box-open text-2xl text-slate-300 mb-2"></i>
+                        <p class="text-xs text-slate-500">아직 이 쓰레기통에 기록된 항목이 없습니다.</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">상단 검색창에서 검색하면 자동으로 쌓입니다!</p>
+                    </div>
+                `;
+            } else {
+                userList.innerHTML = '';
+                myItems.forEach(item => {
+                    const itemDiv = document.createElement('div');
+                    itemDiv.className = 'bg-slate-50 hover:bg-slate-100 p-3.5 rounded-xl border border-slate-200/80 transition space-y-1.5 relative group';
+
+                    let stepsHtml = '';
+                    if (item.steps && item.steps.length > 0) {
+                        stepsHtml = `<ul class="text-xs text-slate-600 list-disc list-inside space-y-0.5 mt-1 pt-1 border-t border-slate-200/60">
+                            ${item.steps.map(s => `<li>${s}</li>`).join('')}
+                        </ul>`;
+                    }
+
+                    itemDiv.innerHTML = `
+                        <div class="flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                <i class="fa-solid fa-dumpster text-xs text-slate-400"></i> ${item.name}
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] text-slate-400">${item.date || ''}</span>
+                                <button onclick="removeRecord('${catId}', '${item.id}', event)" class="text-slate-300 hover:text-rose-500 p-1 transition" title="항목 삭제">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+                        ${stepsHtml}
+                    `;
+                    userList.appendChild(itemDiv);
+                });
+            }
+
+            // 2. Render standard defaults
+            defaultList.innerHTML = '';
+            cat.defaults.forEach(def => {
+                const badge = document.createElement('div');
+                badge.className = 'px-2.5 py-1.5 bg-slate-100 rounded-lg text-slate-700 flex items-center gap-1.5 font-medium';
+                badge.innerHTML = `<i class="fa-solid fa-check text-[10px] text-emerald-500"></i> ${def}`;
+                defaultList.appendChild(badge);
+            });
+        }
+
+        function closeBinModal() {
+            document.getElementById('binModal').classList.add('hidden');
+            currentModalCatId = null;
+        }
+
+        // Close modal when backdrop clicked
+        document.getElementById('binModal').addEventListener('click', function(e) {
+            if (e.target === this) closeBinModal();
+        });
+    </script>
+</body>
+</html>
